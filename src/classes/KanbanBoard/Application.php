@@ -19,6 +19,7 @@ class Application {
 
 	public function board()
 	{
+	    $milestones = array();
 		$ms = array();
 		foreach ($this->repositories as $repository)
 		{
@@ -50,6 +51,7 @@ class Application {
 
 	private function issues($repository, $milestone_id)
 	{
+	    $issues = array();
 		$i = $this->github->issues($repository, $milestone_id);
 		foreach ($i as $ii)
 		{
@@ -68,9 +70,11 @@ class Application {
 				'closed'			=> $ii['closed_at']
 			);
 		}
-		usort($issues['active'], function ($a, $b) {
-			return count($a['paused']) - count($b['paused']) === 0 ? strcmp($a['title'], $b['title']) : count($a['paused']) - count($b['paused']);
-		});
+		if (array_key_exists('active', $issues)){
+            usort($issues['active'], function ($a, $b) {
+                return count($a['paused']) - count($b['paused']) === 0 ? strcmp($a['title'], $b['title']) : count($a['paused']) - count($b['paused']);
+            });
+        }
 		return $issues;
 	}
 

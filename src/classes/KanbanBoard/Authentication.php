@@ -1,16 +1,21 @@
 <?php
 namespace KanbanBoard;
-use KanbanBoard\Utilities;
 
-class Login {
+class Authentication {
 
-	private $client_id = NULL;
-	private $client_secret = NULL;
+	private $clientID = NULL;
+	private $clientSecret = NULL;
 
-	public function __construct()
+	public function __construct(string $clientID = null, string $clientSecret = null)
 	{
-		$this->client_id = Utilities::env('GH_CLIENT_ID');
-		$this->client_secret = Utilities::env('GH_CLIENT_SECRET');
+	    if ($clientID == NULL) {
+            $clientID = Utilities::env('GH_CLIENT_ID');
+        }
+	    if ($clientSecret == NULL) {
+            $clientSecret = Utilities::env('GH_CLIENT_SECRET');
+        }
+	    $this->clientID = $clientID;
+	    $this->clientSecret = $clientSecret;
 	}
 
 	public function logout()
@@ -30,36 +35,36 @@ class Login {
 			&& $_SESSION['redirected'])
 		{
 			$_SESSION['redirected'] = false;
-			$token = $this->_returnsFromGithub($_GET['code']);
+			$token = $this->returnsFromGithub($_GET['code']);
 		}
 		else
 		{
 			$_SESSION['redirected'] = true;
-			$this->_redirectToGithub();
+			$this->redirectToGithub();
 		}
 		$this->logout();
 		$_SESSION['gh-token'] = $token;
 		return $token;
 	}
 
-	private function _redirectToGithub()
+	private function redirectToGithub()
 	{
 		$url = 'Location: https://github.com/login/oauth/authorize';
-		$url .= '?client_id=' . $this->client_id;
+		$url .= '?client_id=' . $this->clientID;
 		$url .= '&scope=repo';
 		$url .= '&state=LKHYgbn776tgubkjhk';
 		header($url);
 		exit();
 	}
 
-	private function _returnsFromGithub($code)
+	private function returnsFromGithub($code)
 	{
 		$url = 'https://github.com/login/oauth/access_token';
 		$data = array(
 			'code' => $code,
 			'state' => 'LKHYgbn776tgubkjhk',
-			'client_id' => $this->client_id,
-			'client_secret' => $this->client_secret);
+			'client_id' => $this->clientID,
+			'client_secret' => $this->clientSecret);
 		$options = array(
 			'http' => array(
 				'method' => 'POST',
