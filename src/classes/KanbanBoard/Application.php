@@ -40,9 +40,9 @@ class Application {
 					'milestone' => $name,
 					'url' => $data['html_url'],
 					'progress' => $percent,
-					'queued' => $issues['queued'],
-					'active' => $issues['active'],
-					'completed' => $issues['completed']
+					'queued' => array_key_exists('queued', $issues) ? $issues['queued'] : [],
+					'active' => array_key_exists('active', $issues) ? $issues['active'] : [],
+					'completed' => array_key_exists('completed', $issues) ? $issues['completed'] : [],
 				);
 			}
 		}
