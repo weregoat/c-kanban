@@ -1,8 +1,10 @@
 #! /usr/bin/php
 <?php
 
+use KanbanBoard\Application;
+use KanbanBoard\GithubClient;
+
 require_once __DIR__.'/../vendor/autoload.php';
-require_once __DIR__.'/../vendor/composer/autoload_classmap.php';
 
 $repositories = [];
 $account;
@@ -49,14 +51,11 @@ foreach($options as $key => $value) {
 }
 
 $github = new GithubClient($token, $account);
-$board = new \KanbanBoard\Application($github, $repositories, array('waiting-for-feedback'));
+$board = new Application($github, $repositories, array('waiting-for-feedback'));
 $data = $board->board();
 foreach($data as $milestone) {
     printf("Milestone: %s\n", $milestone["milestone"]);
-    printf("Queued:\n");
-    foreach($milestone["queued"] as $queued) {
-        printf("%s\n", $queued["title"]);
-    }
+    //var_dump($milestone);
 }
 
 
