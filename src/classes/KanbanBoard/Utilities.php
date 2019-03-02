@@ -20,6 +20,14 @@ class Utilities
 		return is_array($array) && array_key_exists($key, $array) && !empty($array[$key]);
 	}
 
+	public static function getValue($array, $key) {
+	    $value = NULL;
+	    if (self::hasValue($array, $key)) {
+	        $value = $array[$key];
+        }
+	    return $value;
+    }
+
 	public static function dump($data) {
 		echo '<pre>';
 		var_dump($data);

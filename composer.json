@@ -5,6 +5,7 @@
 		}
 	},
 	"require": {
+		"php": "~7.1",
 		"mustache/mustache": "^2.9",
 		"vierbergenlars/php-semver": "^3.0",
 		"knplabs/github-api": "^1.5",

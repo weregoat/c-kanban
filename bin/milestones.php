@@ -50,12 +50,26 @@ foreach($options as $key => $value) {
     }
 }
 
+if (empty($repositories)) {
+    printHelp();
+    die("\nAt least one repository name is required\n");
+}
+
+if (empty($token)) {
+    printHelp();
+    die("\nA personal token to access github is required\n");
+}
+
+if (empty($account)) {
+    printHelp();
+    die("\nThe name of the account owning the github repositories is required\n");
+}
 $github = new GithubClient($token, $account);
 $board = new Application($github, $repositories, array('waiting-for-feedback'));
 $data = $board->board();
 foreach($data as $milestone) {
     printf("Milestone: %s\n", $milestone["milestone"]);
-    //var_dump($milestone);
+    var_dump($milestone);
 }
 
 
