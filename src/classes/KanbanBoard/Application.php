@@ -4,6 +4,7 @@ namespace KanbanBoard;
 use Github\Client;
 use KanbanBoard\DataObjects\Issue;
 use KanbanBoard\DataObjects\Milestone;
+use KanbanBoard\DataObjects\Repository;
 use vierbergenlars\SemVer\version;
 
 use vierbergenlars\SemVer\expression;
@@ -21,37 +22,18 @@ class Application {
 
 	public function board()
 	{
-	    $milestones = array();
-		$ms = array();
-		foreach ($this->repositories as $repository)
-		{
-			foreach ($this->github->milestones($repository) as $data)
-			{
+		$repos = array();
+		foreach ($this->repositories as $repositoryName) {
+            $repository = new Repository($repositoryName);
+            $repository->fetchMilestones($this->github);
+            foreach($repository->milestones as $milestone) {
 			    /* This is completely fucked up; if there are two milestones with the same title, but
 			    in two different repositories, one will be overwritten. It makes no sense */
-				$ms[$data['title']] = $data;
-				$ms[$data['title']]['repository'] = $repository;
+				$milestone->fetchIssues($this->github, $this->paused_labels);
 			}
+            $repos[] = $repository;
 		}
-		ksort($ms);
-		foreach ($ms as $name => $data)
-		{
-		    $closedIssues = $data['closed_issues'];
-		    $openIssues = $data['open_issues'];
-		    /* We skip milestones without issues (open or closed) */
-		    if ($openIssues != 0 AND $closedIssues != 0) {
-			    $issues = $this->issues($data['repository'], $data['number']);
-			    $milestones[] = array(
-					'milestone' => $name,
-					'url' => $data['html_url'],
-					'progress' => self::percent($closedIssues, $openIssues),
-					'queued' => array_key_exists('queued', $issues) ? $issues['queued'] : [],
-					'active' => array_key_exists('active', $issues) ? $issues['active'] : [],
-					'completed' => array_key_exists('completed', $issues) ? $issues['completed'] : [],
-				);
-			}
-		}
-		return $milestones;
+		return $repos;
 	}
 
 	private function issues($repository, $milestone_id)
@@ -143,15 +125,6 @@ class Application {
 
 	}
 
-	private static function percent($closed, $open) :float
-	{
-	    $percent = 0.0;
-		$total = $closed + $open;
-		if($total > 0)
-		{
-			$percent = round($closed / $total * 100);
-		}
-		return $percent;
-	}
+
 
 }
