@@ -82,10 +82,10 @@ if (empty($account)) {
 
 $github = new GithubClient($token, $account);
 foreach($repositories as $name) {
+    print("----\n");
+    printf("Repository: %s\n", $name);
     $repository = new Repository($name);
     $repository->fetchMilestones($github, $labels);
-    print("----\n");
-    printf("Repository: %s\n", $repository->name);
     foreach($repository->milestones as $key => $milestone) {
         print("*****\n");
         printf(" Milestone: %s (%.0f%% completed) [%s]\n\n", $key, $milestone->progress, $milestone->url);
