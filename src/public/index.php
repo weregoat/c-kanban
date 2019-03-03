@@ -7,15 +7,16 @@ use KanbanBoard\DataObjects\Repository;
 require_once __DIR__.'/../../vendor/autoload.php';
 
 $repositoryNames = explode('|', Utilities::env('GH_REPOSITORIES'));
+$pausingLabels = explode('|', Utilities::env('PAUSING_LABELS', 'waiting-for-feedback'));
 $authentication = new Authentication();
-$token = $authentication->login();
+$token = $authentication->getToken();
 $github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
 /* I find the original handling of multiple repositories absurd */
 /* So I am going to list the milestones by repository */
 $repositories = array();
 foreach($repositoryNames as $name) {
     $repository = new Repository($name);
-    $repository->fetchMilestones($github, array('waiting-for-feedback', 'bug', 'xplat'));
+    $repository->fetchMilestones($github, $pausingLabels);
     $repositories[] = $repository->toArray();
 }
 /* https://github.com/bobthecow/mustache.php/wiki */
