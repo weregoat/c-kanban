@@ -1,10 +1,13 @@
 <?php
 namespace KanbanBoard;
 
+use RandomLib\Factory;
+
 class Authentication {
 
-	private $clientID = NULL;
+    private $clientID = NULL;
 	private $clientSecret = NULL;
+	private $state = NULL;
 
 	public function __construct(string $clientID = null, string $clientSecret = null)
 	{
@@ -16,14 +19,17 @@ class Authentication {
         }
 	    $this->clientID = $clientID;
 	    $this->clientSecret = $clientSecret;
+	    $factory = new Factory();
+	    $generator = $factory->getLowStrengthGenerator();
+	    $this->state = $generator->generateString(10,"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 	}
 
-	public function logout()
+	public function removeToken()
 	{
 		unset($_SESSION['gh-token']);
 	}
 
-	public function login()
+	public function getToken()
 	{
 		session_start();
 		$token = NULL;
@@ -42,7 +48,7 @@ class Authentication {
 			$_SESSION['redirected'] = true;
 			$this->redirectToGithub();
 		}
-		$this->logout();
+		$this->removeToken(;
 		$_SESSION['gh-token'] = $token;
 		return $token;
 	}
@@ -52,7 +58,7 @@ class Authentication {
 		$url = 'Location: https://github.com/login/oauth/authorize';
 		$url .= '?client_id=' . $this->clientID;
 		$url .= '&scope=repo';
-		$url .= '&state=LKHYgbn776tgubkjhk';
+		$url .= '&state=' . $this->state;
 		header($url);
 		exit();
 	}
@@ -62,7 +68,7 @@ class Authentication {
 		$url = 'https://github.com/login/oauth/access_token';
 		$data = array(
 			'code' => $code,
-			'state' => 'LKHYgbn776tgubkjhk',
+			'state' => $this->state,
 			'client_id' => $this->clientID,
 			'client_secret' => $this->clientSecret);
 		$options = array(
@@ -80,4 +86,6 @@ class Authentication {
 		array_shift($result);
 		return array_shift($result);
 	}
+
+
 }
