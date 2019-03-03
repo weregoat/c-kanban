@@ -6,10 +6,8 @@
 	},
 	"require": {
 		"php": "~7.1",
-		"mustache/mustache": "^2.9",
-		"vierbergenlars/php-semver": "^3.0",
+		"mustache/mustache": "^2.12",
 		"knplabs/github-api": "^2.11",
-		"michelf/php-markdown": "^1.6",
 		"phpunit/phpunit": "5.0.*",
 		"cache/array-adapter": "^1.0",
 		"php-http/guzzle6-adapter": "^1.1"
