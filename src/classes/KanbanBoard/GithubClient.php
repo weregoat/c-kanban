@@ -4,6 +4,7 @@ namespace KanbanBoard;
 use Cache\Adapter\Filesystem\FilesystemCachePool;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
+use Cache\Adapter\PHPArray\ArrayCachePool;
 
 class GithubClient
 {
@@ -15,9 +16,8 @@ class GithubClient
     {
         $this->account = $account;
         $this->client= new \Github\Client();
-        $adapter = new Local('/tmp/github-api-cache/');
-        $fileSystem = new Filesystem($adapter);
-        $this->client->addCache(new FilesystemCachePool($fileSystem));
+
+        $this->client->addCache(new ArrayCachePool());
         $this->client->authenticate($token, \Github\Client::AUTH_HTTP_TOKEN);
         $this->milestone_api = $this->client->api('issues')->milestones();
     }
@@ -33,8 +33,4 @@ class GithubClient
         return $this->client->api('issue')->all($this->account, $repository, $issue_parameters);
     }
 
-    public function __destruct()
-    {
-        $this->client->removeCache();
-    }
 }
