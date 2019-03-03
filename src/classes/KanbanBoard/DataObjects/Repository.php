@@ -124,13 +124,17 @@ class Repository
         }
     }
 
+    /**
+     * Export the repository as an array.
+     * @return array
+     */
     public function toArray()
     {
         $repository = array();
         foreach($this->milestones as $milestone) {
-            $repository['milestones'][] = $milestone->toArray();
+            $repository[self::MILESTONES][] = $milestone->toArray();
         }
-        $repository['name'] = $this->name;
+        $repository[self::NAME] = $this->name;
         return $repository;
     }
 
