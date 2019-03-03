@@ -48,7 +48,7 @@ class Authentication {
 			$_SESSION['redirected'] = true;
 			$this->redirectToGithub();
 		}
-		$this->removeToken(;
+		$this->removeToken();
 		$_SESSION['gh-token'] = $token;
 		return $token;
 	}
