@@ -2,20 +2,26 @@
 use KanbanBoard\Authentication;
 use KanbanBoard\GithubClient;
 use KanbanBoard\Utilities;
-use KanbanBoard\Application;
+use KanbanBoard\DataObjects\Repository;
 
 require_once __DIR__.'/../../vendor/autoload.php';
 
-$repositories = explode('|', Utilities::env('GH_REPOSITORIES'));
+$repositoryNames = explode('|', Utilities::env('GH_REPOSITORIES'));
 $authentication = new Authentication();
 $token = $authentication->login();
 $github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
-$board = new Application($github, $repositories, array('waiting-for-feedback'));
-$data = $board->board();
+/* I find the original handling of multiple repositories absurd */
+/* So I am going to list the milestones by repository */
+$repositories = array();
+foreach($repositoryNames as $name) {
+    $repository = new Repository($name);
+    $repository->fetchMilestones($github, array('waiting-for-feedback', 'bug', 'xplat'));
+    $repositories[] = $repository->toArray();
+}
 /* https://github.com/bobthecow/mustache.php/wiki */
 /* https://github.com/bobthecow/mustache.php/wiki/Variable-Resolution */
 
 $m = new Mustache_Engine(array(
 	'loader' => new Mustache_Loader_FilesystemLoader('../views'),
 ));
-echo $m->render('index', array('milestones' => $data));
+echo $m->render('index', array('repositories' => $repositories));

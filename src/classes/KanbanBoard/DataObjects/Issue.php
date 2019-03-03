@@ -40,12 +40,17 @@ class Issue
      */
     const ASSIGNEE = 'assignee';
 
-
     /**
      * Key value for issue number.
-     * @var int
+     * @var string
      */
     const NUMBER = 'number';
+
+    /**
+     * Key value for issue paused flag.
+     * @var string
+     */
+    const PAUSED = 'paused';
 
     /**
      * Completed status
@@ -138,6 +143,7 @@ class Issue
         $array[self::URL] = $this->url;
         $array[self::TITLE] = $this->title;
         $array[self::ASSIGNEE] = $this->assignee;
+        $array[self::PAUSED] = $this->paused;
         return $array;
     }
 

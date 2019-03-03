@@ -3,6 +3,7 @@
 
 namespace KanbanBoard\DataObjects;
 
+use Github\Exception\RuntimeException;
 use KanbanBoard\GithubClient;
 
 class Milestone
@@ -31,6 +32,12 @@ class Milestone
      * @var string
      */
     const TITLE = 'title';
+
+    /**
+     * The key for the repository name.
+     * @var string
+     */
+    const REPOSITORY = 'repository';
 
     /**
      * The repository the milestone belongs to.
@@ -153,7 +160,13 @@ class Milestone
         $milestone[self::TITLE] = $this->title;
         $milestone[self::URL] = $this->url;
         $milestone[self::NUMBER] = $this->number;
-        $milestone[self::ISSUES] = $this->getIssues();
+        $issues = array();
+        foreach([Issue::QUEUED, Issue::ACTIVE, Issue::COMPLETED] as $state) {
+            foreach($this->getIssues($state) as $issue) {
+                $issues[$state][] = $issue->toArray();
+            }
+        }
+        $milestone[self::ISSUES] = $issues;
         return $milestone;
     }
 
@@ -205,21 +218,31 @@ class Milestone
      */
     public function fetchIssues(GithubClient $client, $pausingLabels = array())
     {
-        $issues = $client->issues($this->repository->name, $this->number);
-        /* https://developer.github.com/v3/issues/#list-issues */
-        /* https://developer.github.com/v3/issues/#response-1 */
-        foreach ($issues as $data) {
-            if (isset($data['pull_request']))
-                continue;
-            $issue = new Issue($data);
-            /* Only active issues can be paused */
-            if ($issue->state == Issue::ACTIVE) {
-                $issue->isPaused($pausingLabels, false);
+        try {
+            $issues = $client->issues($this->repository->name, $this->number);
+            /* https://developer.github.com/v3/issues/#list-issues */
+            /* https://developer.github.com/v3/issues/#response-1 */
+            foreach ($issues as $data) {
+                if (isset($data['pull_request']))
+                    continue;
+                $issue = new Issue($data);
+                /* Only active issues can be paused */
+                if ($issue->state == Issue::ACTIVE) {
+                    $issue->isPaused($pausingLabels, false);
+                }
+                $this->addIssue($issue, false);
             }
-            $this->addIssue($issue, false);
+            $this->sortActiveIssues();
+            $this->calculateProgress();
+        } catch (RuntimeException $githubRuntimeException) {
+            error_log(sprintf(
+                "Could not retrieve issues from milestone %s at repository %s because of %s with message: %s",
+                $this->title,
+                $this->repository->name,
+                get_class($githubRuntimeException),
+                $githubRuntimeException->getMessage()
+            ));
         }
-        $this->sortActiveIssues();
-        $this->calculateProgress();
     }
 
     /**

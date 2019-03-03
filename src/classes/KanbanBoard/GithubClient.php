@@ -20,9 +20,9 @@ class GithubClient
         $this->milestone_api = $this->client->api('issues')->milestones();
     }
 
-    public function milestones($repository)
+    public function milestones($repository) :array
     {
-        return $this->milestone_api->all($this->account, $repository);
+       return $this->milestone_api->all($this->account, $repository);
     }
 
     public function issues($repository, $milestone_id)

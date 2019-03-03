@@ -4,10 +4,25 @@
 namespace KanbanBoard\DataObjects;
 
 
+use Github\Exception\RuntimeException;
 use KanbanBoard\GithubClient;
 
 class Repository
 {
+    /**
+     * Key for the name property when this repository exported as array.
+     * @see self::toArray
+     * @var string
+     */
+    const NAME = 'name';
+
+    /**
+     * Key for the name of the array of milestones when this repository is exported as array.
+     * @see self::toArray
+     * @var string
+     */
+    const MILESTONES = 'milestones';
+
     /**
      * The name of the repository as identified in the API.
      * @var string
@@ -50,10 +65,7 @@ class Repository
         if (!array_key_exists($key, $this->milestones)) {
             $this->milestones[$key] = $milestone;
         } else {
-            /*
-              So, on my initiative, I am going to change the key if there are
-              duplicates. GitHub API is not clear if it's possible to have duplicated titles
-            */
+            /* Is not clear to me from the GitHub API if it's possible to have duplicated titles */
             $oldMilestone = $this->milestones[$key];
             $altKey = $this->getExtendedKey($oldMilestone->title, $oldMilestone->number);
             /* Check for duplicates. It should not happen as the number is unique */
@@ -84,22 +96,42 @@ class Repository
      */
     public function fetchMilestones(GithubClient $client, $pausingLabels = array())
     {
-        foreach ($client->milestones($this->name) as $data) {
-            $closedIssues = $data['closed_issues'];
-            $openIssues = $data['open_issues'];
-            /* We skip milestones without issues (open or closed) */
-            if ($openIssues != 0 AND $closedIssues != 0) {
-                $milestone = new Milestone(
-                    $this,
-                    $data['number'],
-                    $data['title'],
-                    $data['html_url']
-                );
-                $milestone->fetchIssues($client, $pausingLabels);
-                $this->addMilestone($milestone);
+        try {
+            $milestones = $client->milestones($this->name);
+            foreach ($milestones as $data) {
+                $closedIssues = $data['closed_issues'];
+                $openIssues = $data['open_issues'];
+                /* We skip milestones without issues (open or closed) */
+                if ($openIssues != 0 AND $closedIssues != 0) {
+                    $milestone = new Milestone(
+                        $this,
+                        $data['number'],
+                        $data['title'],
+                        $data['html_url']
+                    );
+                    $milestone->fetchIssues($client, $pausingLabels);
+                    $this->addMilestone($milestone);
+                }
             }
+            $this->sortMilestones();
+        } catch (RuntimeException $githubRuntimeException) { // Other kind of exception from the client may require different handling
+            error_log(sprintf(
+                "Could not retrieve milestones from repository %s because of %s with message: %s",
+                $this->name,
+                get_class($githubRuntimeException),
+                $githubRuntimeException->getMessage()
+            ));
         }
-        $this->sortMilestones();
+    }
+
+    public function toArray()
+    {
+        $repository = array();
+        foreach($this->milestones as $milestone) {
+            $repository['milestones'][] = $milestone->toArray();
+        }
+        $repository['name'] = $this->name;
+        return $repository;
     }
 
     /**
