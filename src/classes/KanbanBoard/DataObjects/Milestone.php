@@ -40,6 +40,30 @@ class Milestone
     const REPOSITORY = 'repository';
 
     /**
+     * The key for property defining the percentage of closed issues when the milestone is exported as array.
+     * @var string
+     */
+    const PERCENT = 'percent';
+
+    /**
+     * The key for property defining the total number of issues when the milestone is exported as array.
+     * @var string
+     */
+    const TOTAL = 'total';
+
+    /**
+     * The key for the array with the progress elements when the milestone is exported as array.
+     * @var string
+     */
+    const PROGRESS = 'progress';
+
+    /**
+     * The key for property defining the count of issues when the milestone is exported as array.
+     * @var string
+     */
+    const ISSUES_COUNT = 'issues_count';
+
+    /**
      * The repository the milestone belongs to.
      * @var Repository
      */
@@ -167,6 +191,10 @@ class Milestone
             }
         }
         $milestone[self::ISSUES] = $issues;
+        $milestone[self::PROGRESS] = [
+            self::TOTAL => count($this->issues),
+            self::PERCENT => $this->progress
+        ];
         return $milestone;
     }
 

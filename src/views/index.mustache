@@ -61,7 +61,7 @@
                                 <div class="list-group">
 
                                     {{#queued}}
-                                        <a href="{{url}}" class="list-group-item list-group-item-danger">
+                                        <a href="{{html_url}}" class="list-group-item list-group-item-danger">
                                             <span class="glyphicon glyphicon-question-sign"></span>
                                             {{title}}
                                             <span style="float: right" class="glyphicon glyphicon-new-window"/></a>
@@ -71,7 +71,7 @@
                             <div class="col-sm-4">
                                 <div class="list-group">
                                     {{#active}}
-                                        <a href="{{url}}"
+                                        <a href="{{html_url}}"
                                            class="list-group-item {{#paused}}list-group-item-warning{{/paused}} {{^paused}}list-group-item-info{{/paused}}">
                                             <img class="img-rounded" src="{{assignee}}" width="16" height="16"
                                                  border="0"/>&nbsp;
@@ -86,7 +86,7 @@
                             <div class="col-sm-4">
                                 <div class="list-group">
                                     {{#completed}}
-                                        <a href="{{url}}" class="list-group-item list-group-item-success">
+                                        <a href="{{html_url}}" class="list-group-item list-group-item-success">
                                             <img class="img-rounded" src="{{assignee}}" width="16" height="16"
                                                  border="0"/>&nbsp;
                                             <s>{{title}}</s>
@@ -101,7 +101,7 @@
                 <div class="panel-footer small">
                     {{#progress}}
                         <div class="progress">
-                            <div class="progress-bar" role="progressbar" aria-valuenow="{{progress}}" aria-valuemin="0"
+                            <div class="progress-bar" role="progressbar" aria-valuenow="{{total}}" aria-valuemin="0"
                                  aria-valuemax="100" style="min-width: 2em; width: {{percent}}%;">{{percent}}%
                             </div>
                         </div>
