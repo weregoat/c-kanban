@@ -76,15 +76,13 @@ class Milestone
      * @param int $number The number identifying the milestone in the GitHub API.
      * @param string $title The title or name of the Milestone.
      * @param string $url The URL pointing to the Milestone in GitHub.
-     * @param float $progress The % of closed issues.
      */
-    public function __construct(Repository $repository, int $number, string $title, string $url, float $progress = 0.0)
+    public function __construct(Repository $repository, int $number, string $title, string $url)
     {
         $this->repository = $repository;
         $this->number = $number;
         $this->title = $title;
         $this->url = $url;
-        $this->progress = $progress;
         $this->issues = array(
             Issue::QUEUED => [],
             Issue::ACTIVE => [],
@@ -95,11 +93,13 @@ class Milestone
     /**
      * Adds an issue to the completed, queued or active list, according to the issue's state.
      * @param Issue $issue The issue to add.
+     * @param bool|NULL $updateProgress Defaults to TRUE; Sets to FALSE to avoid updating the progress percentage right after the addition.
      * @see Issue::ACTIVE
      * @see Issue::COMPLETED
      * @see Issue::QUEUED
+     * @uses self::calculateProgress()
      */
-    public function addIssue(Issue $issue)
+    public function addIssue(Issue $issue, bool $updateProgress = TRUE)
     {
         $state = $issue->state;
         switch ($state) {
@@ -112,12 +112,15 @@ class Milestone
                 error_log(sprintf("unknown issue state %s with issue %s in %s milestone", $issue->state, $issue->title, $this->title));
                 break;
         }
+        if ($updateProgress) {
+            $this->calculateProgress();
+        }
     }
 
     /**
      * Returns the issues from the Milestone as an array.
-     * @param string|NULL $state Optionally removes the issues that are not in the given state.
-     * @return array Always including completed, queued, and active sub-arrays (although they may be empty).
+     * @param string|NULL $state Optionally only returns an array of the issues with the given state.
+     * @return array
      * @see ISSUE::ACTIVE
      * @see ISSUE::COMPLETED
      * @see ISSUE::QUEUED
@@ -127,10 +130,10 @@ class Milestone
         $issues = $this->issues;
         $state = trim(strtolower($state));
         if (!empty($state)) {
-            foreach ($issues as $key => $list) {
-                if ($key !== $state) {
-                    $issues[$key] = [];
-                }
+            if (array_key_exists($state, $issues)) {
+                $issues = $issues[$state];
+            } else {
+                $issues = array();
             }
         }
         return $issues;
@@ -155,27 +158,36 @@ class Milestone
     }
 
     /**
-     * Sort the active issues according to the original method:
-     *   - title length ?!? if their pause property is the same
-     *   - the paused property
+     * Sort the active issues according to the following method:
+     * - Un-paused first
+     * - Paused
+     * Paused and un-paused are then sorted by issue number.
      */
     public function sortActiveIssues()
     {
-        /*
-        Sorts issues in the active section by
-        - title length ?!? if their pause status is the same
-        - the non paused first
-        But why?
-        */
         $active = $this->issues[Issue::ACTIVE];
         usort($active, function ($a, $b) {
-            if ($a->paused == $b->paused) {
-                return strcmp($a->title, $b->title);
+            /*
+             * https://secure.php.net/manual/en/function.usort.php
+             * The comparison function must return an integer less than, equal to,
+             * or greater than zero if the first argument is considered to be respectively
+             * less than, equal to, or greater than the second
+             */
+            if ($a->paused === $b->paused) {
+                if ($a->number < $b->number) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+                return 0; // Same number?
             } else {
-                return $a->paused;
+                if ($a->paused) {
+                    return 1;
+                }
+                return -1;
             }
             /*
-             * Original code (using an array for paused):
+             * Original code (using an array for paused); notice that the paused array would contain only one or 0 elements:
             return count($a['paused']) - count($b['paused']) === 0 ? strcmp($a['title'], $b['title']) : count($a['paused']) - count($b['paused']);
             */
         });
@@ -185,9 +197,13 @@ class Milestone
     /**
      * Fetch the issues associated with this milestone from GitHub.
      * @param GithubClient $client The client to the GitHub's API.
-     * @param array|null $pausedLabels Optionally use the given list of labels to mark active issues as paused.
+     * @param array|null $pausingLabels Optionally use the given list of labels to mark active issues as paused.
+     * @uses self::sortActiveIssues()
+     * @uses self::calculateProgress()
+     * @uses self::addIssue
+     * @uses GithubClient::issues()
      */
-    public function fetchIssues(GithubClient $client, array $pausedLabels = array())
+    public function fetchIssues(GithubClient $client, $pausingLabels = array())
     {
         $issues = $client->issues($this->repository->name, $this->number);
         /* https://developer.github.com/v3/issues/#list-issues */
@@ -195,9 +211,39 @@ class Milestone
         foreach ($issues as $data) {
             if (isset($data['pull_request']))
                 continue;
-            $issue = new Issue($data, $pausedLabels);
-            $this->addIssue($issue);
+            $issue = new Issue($data);
+            /* Only active issues can be paused */
+            if ($issue->state == Issue::ACTIVE) {
+                $issue->isPaused($pausingLabels, false);
+            }
+            $this->addIssue($issue, false);
         }
         $this->sortActiveIssues();
+        $this->calculateProgress();
+    }
+
+    /**
+     * Calculate the rapport between active and non active issues as a percentage.
+     * @uses self::getIssues
+     */
+    public function calculateProgress() {
+        /*
+         * Because the GitHub API considers pull-requests as equivalent to
+         * issues, the original method to calculate the progress of a milestone
+         * by using 'closed_issue' and 'open_issue' values from the API does
+         * not really reflect what you will see in the Kanban board.
+         * I took the liberty to refactor the calculation using only the issues
+         * that will show on the board (active + queue) as open, (completed) as
+         * closed.
+         */
+        $active = count($this->getIssues(Issue::ACTIVE));
+        $queued = count($this->getIssues(Issue::QUEUED));
+        $open = $active + $queued;
+        $closed = count($this->getIssues(Issue::COMPLETED));
+        $total = $closed + $open;
+        if ($total > 0) {
+            $this->progress = round($closed / $total * 100);
+        }
+
     }
 }

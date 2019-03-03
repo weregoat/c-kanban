@@ -1,10 +1,9 @@
 <?php
 namespace KanbanBoard;
 
-use Cache\Adapter\Filesystem\FilesystemCachePool;
-use League\Flysystem\Adapter\Local;
-use League\Flysystem\Filesystem;
+
 use Cache\Adapter\PHPArray\ArrayCachePool;
+use Github\Client;
 
 class GithubClient
 {
@@ -15,10 +14,9 @@ class GithubClient
     public function __construct($token, $account)
     {
         $this->account = $account;
-        $this->client= new \Github\Client();
-
+        $this->client= new Client();
         $this->client->addCache(new ArrayCachePool());
-        $this->client->authenticate($token, \Github\Client::AUTH_HTTP_TOKEN);
+        $this->client->authenticate($token, Client::AUTH_HTTP_TOKEN);
         $this->milestone_api = $this->client->api('issues')->milestones();
     }
 

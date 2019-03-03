@@ -26,11 +26,6 @@ class Application {
 		foreach ($this->repositories as $repositoryName) {
             $repository = new Repository($repositoryName);
             $repository->fetchMilestones($this->github);
-            foreach($repository->milestones as $milestone) {
-			    /* This is completely fucked up; if there are two milestones with the same title, but
-			    in two different repositories, one will be overwritten. It makes no sense */
-				$milestone->fetchIssues($this->github, $this->paused_labels);
-			}
             $repos[] = $repository;
 		}
 		return $repos;

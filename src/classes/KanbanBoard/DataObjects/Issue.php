@@ -40,6 +40,13 @@ class Issue
      */
     const ASSIGNEE = 'assignee';
 
+
+    /**
+     * Key value for issue number.
+     * @var int
+     */
+    const NUMBER = 'number';
+
     /**
      * Completed status
      * @var string
@@ -57,18 +64,6 @@ class Issue
      * @var string
      */
     const QUEUED = 'queued';
-
-    /**
-     * Value for paused issued (because of sorting method)
-     * @var int
-     */
-    const PAUSED = 1;
-
-    /**
-     * Value for issues not paused (because of sorting method)
-     * @var int
-     */
-    const NOT_PAUSED = 0;
 
     /**
      * The title for the issue.
@@ -89,12 +84,11 @@ class Issue
     public $assignee = NULL;
 
     /**
-     * The value marking a paused issue.
-     * @see self::PAUSED
-     * @see self::NOT_PAUSED
-     * @var int
+     * If the issue is paused. Must be active and have at least one of
+     * specified labels.
+     * @var bool
      */
-    public $paused;
+    public $paused = FALSE;
 
     /**
      * The state of the issue.
@@ -106,6 +100,12 @@ class Issue
     public $state;
 
     /**
+     * The number identifying the issue in the GitHub repository.
+     * @var int
+     */
+    public $number;
+
+    /**
      * Original array from the GitHub API client.
      * @var array
      */
@@ -114,15 +114,14 @@ class Issue
     /**
      * Issue constructor.
      * @param array $issueData The array from the GitHub API client.
-     * @param array|NULL $pausingLabels Optionally a list of labels that will mark the issue as paused.
      */
-    public function __construct($issueData = array(), $pausingLabels = array())
+    public function __construct($issueData = array())
     {
         $this->sourceData = $issueData;
         $this->title = $this->sourceData[self::TITLE];
         $this->setState();
         $this->url = $this->sourceData[self::URL];
-        $this->setPaused($pausingLabels);
+        $this->number = $this->sourceData[self::NUMBER];
     }
 
 
@@ -180,22 +179,29 @@ class Issue
     }
 
     /**
-     * Sets a value of 1 or 0 (because later sorting) as the paused property according
-     * to the presence or not of any label with a name matching any pausing label.
+     * Sets the pause property for active issues only according to the presence or not of any label
+     * with a name matching any pausing label.
      * @param array $pausingLabels The array with the label names that will make an issue paused
-     * @see self::PAUSED
-     * @see self::NOT_PAUSED
+     * @param bool $caseSensitive If the comparision should be case sensitive.
+     * @return bool The current paused state of the issue.
      */
-    private function setPaused(array $pausingLabels) {
-        $this->paused = self::NOT_PAUSED;
-        $labels = Utilities::getValue($this->sourceData, 'labels');
-        if (! empty($labels) AND ! empty($pausingLabels)) {
-            foreach ($labels as $label) {
-                if (in_array($label['name'], $pausingLabels)) {
-                    $this->paused = self::PAUSED;
-                    break;
+    public function isPaused(array $pausingLabels, bool $caseSensitive = TRUE) :bool {
+        if ($this->state == self::ACTIVE) {
+            $labels = array();
+            foreach(Utilities::getArrayValue($this->sourceData, 'labels') as $label) {
+                $labels[] = $label['name'];
+            }
+            if (!empty($labels) AND !empty($pausingLabels)) {
+                if (!$caseSensitive) {
+                    array_walk($pausingLabels, function($label) {return strtolower($label);});
+                    array_walk($labels, function($label) {return strtolower($label);});
+                }
+                $intersection = array_intersect($pausingLabels, $labels);
+                if (!empty($intersection)) {
+                    $this->paused = TRUE;
                 }
             }
         }
+        return $this->paused;
     }
 }
