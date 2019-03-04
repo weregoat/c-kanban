@@ -3,9 +3,13 @@ namespace KanbanBoard;
 
 class Utilities
 {
-	private function __construct() {
-	}
 
+    /**
+     * Returns the value of a environment variable, if exists. Otherwise kill the process.
+     * @param string $name The name of the environment variable.
+     * @param mixed|null $default Optionally use this value if the variable is not present or empty.
+     * @return mixed
+     */
 	public static function env($name, $default = NULL) {
 		$value = getenv($name);
 		if($default !== NULL) {
@@ -15,7 +19,6 @@ class Utilities
 		}
 		return (empty($value) && $default === NULL) ? die('Environment variable ' . $name . ' not found or has no value') : $value;
 	}
-
 
     /**
      * Returns if an array has a key with a value.
@@ -54,10 +57,4 @@ class Utilities
         }
 	    return $value;
     }
-
-	public static function dump($data) {
-		echo '<pre>';
-		var_dump($data);
-		echo '</pre>';
-	}
 }
