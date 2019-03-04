@@ -59,7 +59,6 @@
                         <div class="row">
                             <div class="col-sm-4">
                                 <div class="list-group">
-
                                     {{#queued}}
                                         <a href="{{html_url}}" class="list-group-item list-group-item-danger">
                                             <span class="glyphicon glyphicon-question-sign"></span>
@@ -73,7 +72,7 @@
                                     {{#active}}
                                         <a href="{{html_url}}"
                                            class="list-group-item {{#paused}}list-group-item-warning{{/paused}} {{^paused}}list-group-item-info{{/paused}}">
-                                            <img class="img-rounded" src="{{assignee}}" width="16" height="16"
+                                            <img class="img-rounded" src="{{assignee}}?s=16" width="16" height="16"
                                                  border="0"/>&nbsp;
                                             {{#paused}}<em>
                                             <small>{{/paused}}{{title}}{{#paused}}</small></em>{{/paused}}
@@ -87,7 +86,7 @@
                                 <div class="list-group">
                                     {{#completed}}
                                         <a href="{{html_url}}" class="list-group-item list-group-item-success">
-                                            <img class="img-rounded" src="{{assignee}}" width="16" height="16"
+                                            <img class="img-rounded" src="{{assignee}}?s=16" width="16" height="16"
                                                  border="0"/>&nbsp;
                                             <s>{{title}}</s>
                                             <span style="float: right" class="glyphicon glyphicon-new-window"/>

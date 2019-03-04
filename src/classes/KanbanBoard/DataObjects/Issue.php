@@ -111,22 +111,22 @@ class Issue
     public $number;
 
     /**
-     * Original array from the GitHub API client.
+     * Array with the name of the labels attached to the milestone.
      * @var array
      */
-    private $sourceData;
+    public $labels = array();
 
     /**
      * Issue constructor.
-     * @param array $issueData The array from the GitHub API client.
+     * @param array $issueAPIData The array with the data from the GitHub API client.
      */
-    public function __construct($issueData = array())
+    public function __construct(array $issueAPIData = array())
     {
-        $this->sourceData = $issueData;
-        $this->title = $this->sourceData[self::TITLE];
-        $this->setState();
-        $this->url = $this->sourceData[self::URL];
-        $this->number = $this->sourceData[self::NUMBER];
+        $this->title = Utilities::getValue($issueAPIData, self::TITLE);
+        $this->setState($issueAPIData);
+        $this->url = Utilities::getValue($issueAPIData, self::URL);
+        $this->number = Utilities::getValue($issueAPIData, self::NUMBER);
+        $this->setLabels($issueAPIData);
     }
 
 
@@ -151,14 +151,16 @@ class Issue
     /**
      * Sets the state of the issue according to issue state and assignee.
      * It also sets the assignee, if any.
+     * @param array $data The issue's data from the Github API client.
      * @see self::COMPLETED
      * @see self::ACTIVE
      * @see self::QUEUED
      * @uses Utilities::getValue()
+     * @uses self::setAssignee
      */
-    private function setState() {
-        $this->setAssignee();
-        $state = Utilities::getValue($this->sourceData, self::STATE);
+    private function setState(array $data) {
+        $this->setAssignee($data);
+        $state = Utilities::getValue($data, self::STATE);
         if ($state === 'closed') {
             $this->state = self::COMPLETED;
         } else {
@@ -172,37 +174,40 @@ class Issue
 
     /**
      * Sets the assignee as the URL of the assignee, if present.
+     * @param array $data The issue's data from the Github API client.
      * @uses Utilities::getValue()
      */
-    private function setAssignee() {
-        $assignee = Utilities::getValue($this->sourceData, 'assignee');
+    private function setAssignee(array $data) {
+        $assignee = Utilities::getValue($data, 'assignee');
         if (!empty($assignee)) {
             $url = Utilities::getValue($assignee, 'avatar_url');
             if (!empty($url)) {
-                $this->assignee = $url.'?s=16';
+                $this->assignee = $url;
             }
         }
     }
 
     /**
+     * Sets the label names (lowercase) associated with the issue.
+     * @param array $data The issue's data from the Github API client.
+     */
+    private function setLabels(array $data) {
+        foreach(Utilities::getArrayValue($data, 'labels') as $label) {
+            $this->labels[] = strtolower(trim($label['name']));
+        }
+    }
+
+    /**
      * Sets the pause property for active issues only according to the presence or not of any label
-     * with a name matching any pausing label.
-     * @param array $pausingLabels The array with the label names that will make an issue paused
-     * @param bool $caseSensitive If the comparision should be case sensitive.
+     * with a name matching (case insensitive) any from the given list.
+     * @param array $pausingLabels The array with the label names that will make an issue paused.
      * @return bool The current paused state of the issue.
      */
-    public function isPaused(array $pausingLabels, bool $caseSensitive = TRUE) :bool {
+    public function isPaused(array $pausingLabels) :bool {
         if ($this->state == self::ACTIVE) {
-            $labels = array();
-            foreach(Utilities::getArrayValue($this->sourceData, 'labels') as $label) {
-                $labels[] = $label['name'];
-            }
-            if (!empty($labels) AND !empty($pausingLabels)) {
-                if (!$caseSensitive) {
-                    array_walk($pausingLabels, function($label) {return strtolower($label);});
-                    array_walk($labels, function($label) {return strtolower($label);});
-                }
-                $intersection = array_intersect($pausingLabels, $labels);
+            if (!empty($this->labels) AND !empty($pausingLabels)) {
+                array_walk($pausingLabels, function($label) {return trim(strtolower($label));});
+                $intersection = array_intersect($pausingLabels, $this->labels);
                 if (!empty($intersection)) {
                     $this->paused = TRUE;
                 }
