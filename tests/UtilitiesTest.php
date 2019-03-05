@@ -31,8 +31,11 @@ class UtilitiesTest extends TestCase
     /**
      * @dataProvider getValues
      */
-    public function testGetValue($array, $key, $expected)
+    public function testGetValue($array, $key, $expected, $exception)
     {
+        if ($exception == TRUE) {
+            $this->expectException($expected);
+        }
         $result = Utilities::getValue($array, $key);
         $this->assertEquals($expected, $result);
     }
@@ -40,8 +43,11 @@ class UtilitiesTest extends TestCase
     /**
      * @dataProvider getValues
      */
-    public function testHasValue($array, $key, $expected)
+    public function testHasValue($array, $key, $expected, $exception)
     {
+        if ($exception == TRUE) {
+            $this->expectException($expected);
+        }
         $result = Utilities::hasValue($array, $key);
         if (empty($expected)) {
             $this->assertFalse($result);
@@ -53,8 +59,11 @@ class UtilitiesTest extends TestCase
     /**
      * @dataProvider getArrayValues
      */
-    public function testGetArrayValue($array, $key, $expected)
+    public function testGetArrayValue($array, $key, $expected, $exception)
     {
+        if ($exception == TRUE) {
+            $this->expectException($expected);
+        }
         $result = Utilities::getArrayValue($array, $key);
         $this->assertEquals($expected, $result);
     }
@@ -63,17 +72,19 @@ class UtilitiesTest extends TestCase
 
     public function getValues() {
         return [
-            [['foo' => 'bar'], 'foo', 'bar'],
-            [['foo' => ''], 'foo', ''],
-            [['foo' => 'bar'], 'fooo', NULL],
+            [['foo' => 'bar'], 'foo', 'bar', false],
+            [['foo' => ''], 'foo', '', false],
+            [['foo' => 'bar'], 'fooo', NULL, false],
+            ['not_array', 'foo', 'TypeError', true]
         ];
     }
 
     public function getArrayValues() {
         return [
-            [['foo' => 'bar'], 'foo', []],
-            [['foo' => ['foobar' => 'barbar']], 'foo', ['foobar' => 'barbar']],
-            [['foo' => ['foobar' => 'barbar']], 'fooo', []],
+            [['foo' => 'bar'], 'foo', [], false],
+            [['foo' => ['foobar' => 'barbar']], 'foo', ['foobar' => 'barbar'], false],
+            [['foo' => ['foobar' => 'barbar']], 'fooo', [], false],
+            ['not_array', 'foo', 'TypeError', true]
         ];
     }
 

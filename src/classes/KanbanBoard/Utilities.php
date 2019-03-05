@@ -35,7 +35,7 @@ class Utilities
      * @return bool
      */
 	public static function hasValue(array $array, $key) :bool {
-		return is_array($array) && array_key_exists($key, $array) && !empty($array[$key]);
+		return array_key_exists($key, $array) && !empty($array[$key]);
 	}
 
     /**
@@ -44,7 +44,7 @@ class Utilities
      * @param mixed $key The key to the value.
      * @return null|mixed NULL if there is no such value, whatever otherwise.
      */
-	public static function getValue($array, $key) {
+	public static function getValue(array $array, $key) {
 	    $value = NULL;
 	    if (self::hasValue($array, $key)) {
 	        $value = $array[$key];
