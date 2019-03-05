@@ -33,6 +33,7 @@ try {
     error_log($exception->getMessage());
     header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
     echo "<p>Server Error</p>";
+    exit();
 }
 
 $m = new Mustache_Engine(array(
