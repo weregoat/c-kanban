@@ -256,7 +256,7 @@ class Milestone
                 $issue = new Issue($data);
                 /* Only active issues can be paused */
                 if ($issue->state == Issue::ACTIVE) {
-                    $issue->isPaused($pausingLabels, false);
+                    $issue->isPaused($pausingLabels);
                 }
                 $this->addIssue($issue, false);
             }
