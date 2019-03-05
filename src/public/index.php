@@ -7,9 +7,15 @@ use KanbanBoard\DataObjects\Repository;
 require_once __DIR__.'/../../vendor/autoload.php';
 
 $repositoryNames = explode('|', Utilities::env('GH_REPOSITORIES'));
-$pausingLabels = explode('|', Utilities::env('PAUSING_LABELS', 'waiting-for-feedback'));
-$authentication = new Authentication();
-$token = $authentication->getToken();
+$pausingLabels = explode('|', Utilities::env('PAUSING_LABELS', ''));
+/* OAuth App authorisation is okay, but private token works too. YMMV */
+/* https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line */
+$token = $token = Utilities::env('GH_TOKEN', '');
+if (empty($token)) {
+    $token = $authentication->getToken();
+    $authentication = new Authentication();
+}
+
 $github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
 /* I find the original handling of multiple repositories absurd */
 /* So I am going to list the milestones by repository */
