@@ -31,7 +31,8 @@ try {
     /* https://github.com/bobthecow/mustache.php/wiki/Variable-Resolution */
 } catch (\Exception $exception) {
     error_log($exception->getMessage());
-    header('HTTP/1.1 500 Internal Server error');
+    header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
+    echo "<p>Server Error</p>";
 }
 
 $m = new Mustache_Engine(array(
