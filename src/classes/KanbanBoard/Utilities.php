@@ -7,17 +7,25 @@ class Utilities
     /**
      * Returns the value of a environment variable, if exists. Otherwise kill the process.
      * @param string $name The name of the environment variable.
-     * @param mixed|null $default Optionally use this value if the variable is not present or empty.
+     * @param string|null $default Optionally use this value if the variable is not present or empty.
      * @return mixed
+     * @see getenv
+     * @throws \RuntimeException If the environment variable is not set and there is no default
      */
-	public static function env($name, $default = NULL) {
+	public static function env(string $name, $default = NULL) {
 		$value = getenv($name);
-		if($default !== NULL) {
-			if(!empty($value))
-				return $value;
-			return $default;
-		}
-		return (empty($value) && $default === NULL) ? die('Environment variable ' . $name . ' not found or has no value') : $value;
+		if ($value === FALSE OR empty($value)) { // FALSE means no env was found
+		    /* If there is a default */
+            if ($default !== NULL) {
+                $value = $default;
+            } else {
+                $value = FALSE;
+            }
+        }
+		if ($value === FALSE) { // FALSE means no env
+		    throw new \RuntimeException(sprintf("Environment variable %s not set", $name));
+        }
+		return $value;
 	}
 
     /**
@@ -36,7 +44,7 @@ class Utilities
      * @param mixed $key The key to the value.
      * @return null|mixed NULL if there is no such value, whatever otherwise.
      */
-	public static function getValue(array $array, $key) {
+	public static function getValue($array, $key) {
 	    $value = NULL;
 	    if (self::hasValue($array, $key)) {
 	        $value = $array[$key];
