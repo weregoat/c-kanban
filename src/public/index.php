@@ -12,8 +12,8 @@ $pausingLabels = explode('|', Utilities::env('PAUSING_LABELS', ''));
 /* https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line */
 $token = $token = Utilities::env('GH_TOKEN', '');
 if (empty($token)) {
-    $token = $authentication->getToken();
     $authentication = new Authentication();
+    $token = $authentication->getToken();
 }
 
 $github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
