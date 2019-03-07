@@ -48,7 +48,7 @@ Or an `.htaccess` file. YMMV
 
 # How to test the application
 
-There is a PHPUnit suit to check some of the components; run composer **without** the `--no-dev` option and it will install also `phpunit` binaries and dependencies.
+There is a **very basic** PHPUnit suit to check some of the components; run composer **without** the `--no-dev` option and it will install also `phpunit` binaries and dependencies.
 Then run the suite:
 ```
 ./vendor/bin/phpunit -c ./phpunit.xml
@@ -64,3 +64,5 @@ For the web application... beats me.
 Once the web-page is up and running and the environment variables are properly set the page, on first access, should redirect to GitHub for authorising the App to access the repositories of the `GH_ACCOUNT`.
 Failures should result in an error message and a 500 status, plus logs according to `error_log` setting.
 If a repository has no milestones, the list will be just empty.
+
+I suppose a script can be written to check the results for a given repository, but I did not write any.
