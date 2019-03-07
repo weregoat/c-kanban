@@ -59,6 +59,7 @@ foreach($options as $key => $value) {
         case "h":
         default:
             printHelp();
+            exit();
             break;
 
     }
@@ -109,9 +110,10 @@ foreach($repositories as $name) {
 
 
 function printHelp() {
-    print("-r --repo [string] : for each repository to check milestones\n");
+    print("-r --repo [string] : for each repository to check milestones from.\n");
     print("-a --account [string] : account name the repositories are under\n");
     print("-t --token [string] : private token to use instead of application token\n");
+    print("-l --label [string] : for each label to match for pause status\n");
     print("-h --help: this help\n");
 }
 
