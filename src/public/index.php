@@ -8,9 +8,13 @@ use KanbanBoard\DataObjects\Repository;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 try {
+    $authentication = NULL;
     $repositoryNames = explode('|', Utilities::env('GH_REPOSITORIES'));
     $pausingLabels = explode('|', Utilities::env('PAUSING_LABELS', ''));
-    $authentication = new Authentication();
+    $clientID = Utilities::env('GH_CLIENT_ID');
+    $clientSecret = Utilities::env('GH_CLIENT_SECRET');
+    $scope = Utilities::env('GH_SCOPE', 'repo');
+    $authentication = new Authentication($clientID, $clientSecret, $scope);
     $token = $authentication->getToken();
     $github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
     /* I find the original handling of multiple repositories absurd */
@@ -27,7 +31,9 @@ try {
     error_log($exception->getMessage());
     header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
     printf("<p>Failed to retrieve milestones: %s</p>", $exception->getMessage());
-    $authentication->clearSession();
+    if ($authentication !== null) {
+        $authentication->clearSession();
+    }
     exit();
 }
 

@@ -65,20 +65,14 @@ class Authentication
      * Constructor; where optionally client_id, client_secret and scope for the authorisation with
      * GitHub API can be specified instead of the environment variables.
      *
-     * @param string|null $clientID The clientID as specified in the App authorisation on GitHub
-     * @param string|null $clientSecret The Secret as specified in the App authorisation on GitHub
+     * @param string $clientID The clientID as specified in the App authorisation on GitHub
+     * @param string $clientSecret The Secret as specified in the App authorisation on GitHub
      * @param string|null $scope The scope the App authorisation will have
      * @throws \RuntimeException if no client_id or client_secret can be defined by parameters or environment variables.
      * @uses Utilities::env
      */
-    public function __construct(string $clientID = null, string $clientSecret = null, string $scope = NULL)
+    public function __construct(string $clientID, string $clientSecret, string $scope = NULL)
     {
-        if ($clientID == NULL) {
-            $clientID = Utilities::env('GH_CLIENT_ID');
-        }
-        if ($clientSecret == NULL) {
-            $clientSecret = Utilities::env('GH_CLIENT_SECRET');
-        }
         /* The original application seemed designed to access own repositories.
          * In that light the 'repo' scope would have made sense (although, maybe,
          * 'repo:status' would have been better).
@@ -91,12 +85,8 @@ class Authentication
          *
          * https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/
          */
-        if ($scope == NULL) {
-            if (getenv('GH_SCOPE') !== FALSE) {
-                $scope = getenv('GH_SCOPE');
-            } else {
-                $scope = 'repo'; // Original value as default.
-            }
+        if ($scope === NULL) {
+            $scope = 'repo'; // Original value as default.
         }
 
         $this->clientID = $clientID;
