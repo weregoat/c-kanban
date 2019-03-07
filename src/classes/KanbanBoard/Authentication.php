@@ -39,7 +39,7 @@ class Authentication
     /**
      * Session expiration interval in seconds.
      */
-    const EXPIRATION_INTERVAL = 60; // 8 hours
+    const EXPIRATION_INTERVAL = 60*60*4; // 4 hours
 
     /**
      * The client_id to be used with the OAuth authorisation at GitHub.
@@ -135,7 +135,7 @@ class Authentication
     }
 
     /*
-     * Removes the variables from the session. Thus forcing a new authorisation.
+     * Removes the variables from the session. Thus forcing requesting a new token.
      */
     public function clearSession() {
         unset($_SESSION[self::ACCESS_TOKEN]);
