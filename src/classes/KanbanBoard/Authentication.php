@@ -4,6 +4,10 @@ namespace KanbanBoard;
 
 use RandomLib\Factory;
 
+/**
+ * Authentication class to perform an OAuth authentication with GitHub to access the API.
+ * @package KanbanBoard
+ */
 class Authentication
 {
 
@@ -26,7 +30,7 @@ class Authentication
 
     /**
      * The scope the OAuth app will require the user authorising the App to grant.
-     * Notice that the user authorising the App (through client_id etc.) it doesn't need to be the
+     * Notice that the user authorising the App (through client_id etc.) doesn't need to be the
      * same owning the repository to display the milestones for.
      * https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/
      * @var mixed|string|null
@@ -34,16 +38,14 @@ class Authentication
     private $scope = NULL;
 
     /**
-     * Authentication class to perform an OAuth authentication with GitHub to access the API.
-     * Once Authorised GitHub would redirect back to the site defined by the OAuth App.
-     * Since an OAuth App is supposed to be a *third* application, the whole OAuth App
-     * authorisation doesn't fit very well with the test.
-     * Hence my adding the possibility to use a personal token instead and specifying the
-     * scope.
-     * Also why the code was mostly left as it was, at least in the main logic.
+     * Constructor; where optionally client_id, client_secret and scope for the authorisation with
+     * GitHub API can be specified instead of the environment variables.
+     *
      * @param string|null $clientID The clientID as specified in the App authorisation on GitHub
      * @param string|null $clientSecret The Secret as specified in the App authorisation on GitHub
      * @param string|null $scope The scope the App authorisation will have
+     * @throws \RuntimeException if no client_id or client_secret can be defined by parameters or environment variables.
+     * @uses Utilities::env
      */
     public function __construct(string $clientID = null, string $clientSecret = null, string $scope = null)
     {
@@ -54,8 +56,8 @@ class Authentication
             $clientSecret = Utilities::env('GH_CLIENT_SECRET');
         }
         /* The original application seemed designed to access own repositories.
-         * In that light the 'repo' scope would have made sense (although, maybe
-         * 'repo:status' would have been better.
+         * In that light the 'repo' scope would have made sense (although, maybe,
+         * 'repo:status' would have been better).
          * Since as a coding test this application is required to be published and
          * accessed by someone else, and that I am just using it to access others
          * public repositories as demo, I have added the option to specify the scope the
