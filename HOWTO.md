@@ -1,7 +1,6 @@
 ## How to deploy the application
 
-You need to copy files (at least the `scr` directory and the `composer.json`) file into a directory, for example `/var/www/kanban/`.
-A simple console script for testing the classes is provided in the `bin` subdirectory, while the web interface is in the `src/public` subdirectory.
+Assuming the starting point is the `tar` archive this file will be packed in, all you need to do, ideally, would be to explode it into the directory you want to use as root for the project and then symlink the `src/public` subdirectory as the document root of the website (or a subdir).
 
 The application uses [Composer](https://getcomposer.org/) for the dependencies and to create the _autoload_ file used by the application; you need to install it (manually or through a packaging system) and from the directory with the code run:
 
@@ -13,7 +12,7 @@ Other options are possible, YMMV.
 If all goes well it will create a `vendor` directory with the dependencies and the PSR-4 _autoload_ file.
 If it doesn't, you will need to check with the problems composer may had outlined (wrong PHP version or missing components...). They are mostly related to phpunit requirements (sadly the --no-dev option doesn't seem to stop Composer from checking them); removing the phpunit dependency from `composer.json` may help.
 
-The application **requires** the following environment variables:
+The application **requires** the following environment variables to run:
 * `GH_CLIENT_ID`: the client ID of the OAuth Application for authorising GitHub API access.
 * `GH_CLIENT_SECRET`: the client secret of the OAuth Application.
 * `GH_REPOSITORIES`: a list of repositories to get the milestones for separated by `|`.
@@ -46,6 +45,18 @@ For example, with _Apache_, it may be a virtual host configuration like:
 ```
 
 Or an `.htaccess` file. YMMV
+
+You can also use the built-in web server; assuming the code was exploded in the `/var/www/kanban/` directory as above something like:
+```
+cd /var/www/kanban/src/public/
+export GH_CLIENT_ID=[your_app_client_id]
+export GH_CLIENT_SECRET=[your_app_client_secret]
+export GH_ACCOUNT=microsoft
+export GH_REPOSITORIES='vscode|msbuild'
+export GH_SCOPE=''
+export GH_LABELS='xplat|bug'
+php -S localhost:9090
+```
 
 # How to test the application
 
