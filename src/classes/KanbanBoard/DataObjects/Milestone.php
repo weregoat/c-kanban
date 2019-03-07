@@ -125,9 +125,9 @@ class Milestone
      * Adds an issue to the completed, queued or active list, according to the issue's state.
      * @param Issue $issue The issue to add.
      * @param bool|NULL $updateProgress Defaults to TRUE; Sets to FALSE to avoid updating the progress percentage right after the addition.
-     * @see Issue::ACTIVE
-     * @see Issue::COMPLETED
-     * @see Issue::QUEUED
+     * @see  Issue::ACTIVE
+     * @see  Issue::COMPLETED
+     * @see  Issue::QUEUED
      * @uses self::calculateProgress()
      */
     public function addIssue(Issue $issue, bool $updateProgress = TRUE)
@@ -185,8 +185,8 @@ class Milestone
         $milestone[self::URL] = $this->url;
         $milestone[self::NUMBER] = $this->number;
         $issues = array();
-        foreach([Issue::QUEUED, Issue::ACTIVE, Issue::COMPLETED] as $state) {
-            foreach($this->getIssues($state) as $issue) {
+        foreach ([Issue::QUEUED, Issue::ACTIVE, Issue::COMPLETED] as $state) {
+            foreach ($this->getIssues($state) as $issue) {
                 $issues[$state][] = $issue->toArray();
             }
         }
@@ -246,38 +246,29 @@ class Milestone
      */
     public function fetchIssues(GithubClient $client, $pausingLabels = array())
     {
-        try {
-            $issues = $client->issues($this->repository->name, $this->number);
-            /* https://developer.github.com/v3/issues/#list-issues */
-            /* https://developer.github.com/v3/issues/#response-1 */
-            foreach ($issues as $data) {
-                if (isset($data['pull_request']))
-                    continue;
-                $issue = new Issue($data);
-                /* Only active issues can be paused */
-                if ($issue->state == Issue::ACTIVE) {
-                    $issue->isPaused($pausingLabels);
-                }
-                $this->addIssue($issue, false);
+        $issues = $client->issues($this->repository->name, $this->number);
+        /* https://developer.github.com/v3/issues/#list-issues */
+        /* https://developer.github.com/v3/issues/#response-1 */
+        foreach ($issues as $data) {
+            if (isset($data['pull_request']))
+                continue;
+            $issue = new Issue($data);
+            /* Only active issues can be paused */
+            if ($issue->state == Issue::ACTIVE) {
+                $issue->isPaused($pausingLabels);
             }
-            $this->sortActiveIssues();
-            $this->calculateProgress();
-        } catch (RuntimeException $githubRuntimeException) {
-            error_log(sprintf(
-                "Could not retrieve issues from milestone %s at repository %s because of %s with message: %s",
-                $this->title,
-                $this->repository->name,
-                get_class($githubRuntimeException),
-                $githubRuntimeException->getMessage()
-            ));
+            $this->addIssue($issue, false);
         }
+        $this->sortActiveIssues();
+        $this->calculateProgress();
     }
 
     /**
      * Calculate the rapport between active and non active issues as a percentage.
      * @uses self::getIssues
      */
-    public function calculateProgress() {
+    public function calculateProgress()
+    {
         /*
          * Because the GitHub API considers pull-requests as equivalent to
          * issues, the original method to calculate the progress of a milestone

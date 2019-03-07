@@ -10,14 +10,8 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 try {
     $repositoryNames = explode('|', Utilities::env('GH_REPOSITORIES'));
     $pausingLabels = explode('|', Utilities::env('PAUSING_LABELS', ''));
-    /* OAuth App authorisation is okay, but private token works too. YMMV */
-    /* https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line */
-    $token = $token = Utilities::env('GH_TOKEN', '');
-    if (empty($token)) {
-        $authentication = new Authentication();
-        $token = $authentication->getToken();
-    }
-
+    $authentication = new Authentication();
+    $token = $authentication->getToken();
     $github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
     /* I find the original handling of multiple repositories absurd */
     /* So I am going to list the milestones by repository */
@@ -32,7 +26,8 @@ try {
 } catch (\Exception $exception) {
     error_log($exception->getMessage());
     header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
-    echo "<p>Server Error</p>";
+    printf("<p>Failed to retrieve milestones: %s</p>", $exception->getMessage());
+    $authentication->clearSession();
     exit();
 }
 

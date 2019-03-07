@@ -6,10 +6,40 @@ use RandomLib\Factory;
 
 /**
  * Authentication class to perform an OAuth authentication with GitHub to access the API.
+ * https://developer.github.com/v3/guides/basics-of-authentication/
  * @package KanbanBoard
  */
 class Authentication
 {
+
+    /**
+     * Expiration time for the session variables.
+     * @var string
+     */
+    const EXPIRATION_TIMESTAMP = 'kanban_session_expire';
+
+    /**
+     * Key to the GitHub API access token in the session.
+     * @var string
+     */
+    const ACCESS_TOKEN = 'kanban_access_token';
+
+    /**
+     * If an auth request was performed. Thus requiring to parse the query part for the token.
+     * @var string
+     */
+    const PARSE_QUERY = 'kanban_parse_query';
+
+    /**
+     * The key to the auth request state in the session.
+     * @var string
+     */
+    const STATE = 'kanban_state';
+
+    /**
+     * Session expiration interval in seconds.
+     */
+    const EXPIRATION_INTERVAL = 60; // 8 hours
 
     /**
      * The client_id to be used with the OAuth authorisation at GitHub.
@@ -21,12 +51,6 @@ class Authentication
      * @var mixed|string|null
      */
     private $clientSecret = NULL;
-
-    /**
-     * Random string to protect against XS attacks.
-     * @var string|null
-     */
-    private $state = NULL;
 
     /**
      * The scope the OAuth app will require the user authorising the App to grant.
@@ -47,7 +71,7 @@ class Authentication
      * @throws \RuntimeException if no client_id or client_secret can be defined by parameters or environment variables.
      * @uses Utilities::env
      */
-    public function __construct(string $clientID = null, string $clientSecret = null, string $scope = null)
+    public function __construct(string $clientID = null, string $clientSecret = null, string $scope = NULL)
     {
         if ($clientID == NULL) {
             $clientID = Utilities::env('GH_CLIENT_ID');
@@ -68,64 +92,78 @@ class Authentication
          * https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/
          */
         if ($scope == NULL) {
-            $scope = Utilities::env('GH_SCOPE', 'repo'); // Notice: defaults to the original value
+            if (getenv('GH_SCOPE') !== FALSE) {
+                $scope = getenv('GH_SCOPE');
+            } else {
+                $scope = 'repo'; // Original value as default.
+            }
         }
 
         $this->clientID = $clientID;
         $this->clientSecret = $clientSecret;
         $this->scope = $scope;
 
-        /* Generate a simple random string to use as state with the auth request */
-        /* https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/ */
-        $factory = new Factory();
-        $generator = $factory->getLowStrengthGenerator();
-        $this->state = $generator->generateString(10, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    }
-
-    /**
-     * Removes the GitHub token from the session.
-     */
-    public function removeToken()
-    {
-        unset($_SESSION['gh-token']);
     }
 
     /**
      * Returns a token from the OAuth App Authorisation with GitHub.
      * @return string|null
+     * @throws \Exception
+     * @url https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/
      */
     public function getToken()
     {
         session_start();
-        $token = NULL;
-        if (array_key_exists('gh-token', $_SESSION)) {
-            $token = $_SESSION['gh-token'];
-        } else if (Utilities::hasValue($_GET, 'code')
-            && Utilities::hasValue($_GET, 'state')
-            && $_SESSION['redirected']) {
-            $_SESSION['redirected'] = false;
-            $token = $this->returnsFromGithub($_GET['code']);
-            $_SESSION['gh-time'] = time();
-        } else {
-            $_SESSION['redirected'] = true;
-            $this->redirectToGithub();
+        $this->checkSessionExpiration();
+
+        $token = Utilities::getValue($_SESSION, self::ACCESS_TOKEN);
+        /* If we don't have a token in the session we need to get a new one from GitHub */
+        if (empty($token)) {
+            /* If this is a callback from GitHub after the client authorised the app */
+            if (Utilities::hasValue($_GET, 'code') AND Utilities::hasValue($_GET, 'state')
+                /* And we were expecting it */
+                AND $_SESSION[self::PARSE_QUERY] === TRUE)
+            {
+                /* Then we request the token from GitHub using the code */
+                $token = $this->returnFromGithub($_GET['code'], $_GET['state']);
+            } else {
+                /* Otherwise we redirect the client to GitHub to authorise the app */
+                $this->redirectToGithub();
+            }
         }
-        $this->removeToken();
-        $_SESSION['gh-token'] = $token;
         return $token;
+    }
+
+    /*
+     * Removes the variables from the session. Thus forcing a new authorisation.
+     */
+    public function clearSession() {
+        unset($_SESSION[self::ACCESS_TOKEN]);
+        unset($_SESSION[self::PARSE_QUERY]);
+        unset($_SESSION[self::EXPIRATION_TIMESTAMP]);
+        unset($_SESSION[self::STATE]);
     }
 
     /**
      * Redirects the web client to GitHub to authorise the App.
+     * @url https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#1-request-a-users-github-identity
      */
     private function redirectToGithub()
     {
+
         $url = 'Location: https://github.com/login/oauth/authorize';
         $url .= '?client_id=' . $this->clientID;
         if (!empty($this->scope)) {
             $url .= '&scope=' . $this->scope;
         }
-        $url .= '&state=' . $this->state;
+        /* Generate a simple random string to use as state with the auth request */
+        /* https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/ */
+        $factory = new Factory();
+        $generator = $factory->getLowStrengthGenerator();
+        $state = $generator->generateString(10, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        $url .= '&state=' . $state;
+        $_SESSION[self::STATE] = $state;
+        $_SESSION[self::PARSE_QUERY] = TRUE;
         header($url);
         exit();
     }
@@ -133,14 +171,23 @@ class Authentication
     /**
      * Returns access_code from the query of the callback.
      * @param string $code
+     * @param string $state
      * @return string|null
+     * @throws \Exception
+     * @url https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#2-users-are-redirected-back-to-your-site-by-github
      */
-    private function returnsFromGithub($code)
+    private function returnFromGithub(string $code, string $state)
     {
+        /*
+            https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#2-users-are-redirected-back-to-your-site-by-github
+        */
+        if ($state !== $_SESSION[self::STATE]) {
+            throw new \Exception("Invalid state");
+        }
         $url = 'https://github.com/login/oauth/access_token';
         $data = array(
             'code' => $code,
-            'state' => $this->state,
+            'state' => $_SESSION['gh-state'],
             'client_id' => $this->clientID,
             'client_secret' => $this->clientSecret);
         $options = array(
@@ -152,15 +199,35 @@ class Authentication
         );
         $context = stream_context_create($options);
         $result = file_get_contents($url, false, $context);
-        if ($result === FALSE)
-            die('Error');
+        if ($result === FALSE) {
+            throw new \Exception("Failed to process OAuth request to GitHub");
+        }
         $accessToken = NULL;
         $matches = array();
         if (preg_match('/access_token=([[:alnum:]]+:?)&/', $result, $matches) == 1) {
             $accessToken = $matches[1];
         };
+        $_SESSION[self::ACCESS_TOKEN] = $accessToken;
+        /* We don't need to ask for auth again */
+        $_SESSION[self::PARSE_QUERY] = FALSE;
         return $accessToken;
     }
+
+    /**
+     * Check the expiration timestamp for the session variables.
+     */
+    private function checkSessionExpiration()
+    {
+        $now = time();
+        if (!Utilities::hasValue($_SESSION, self::EXPIRATION_TIMESTAMP)) {
+            $_SESSION[self::EXPIRATION_TIMESTAMP] = $now + self::EXPIRATION_INTERVAL;
+        }
+        if (Utilities::getValue($_SESSION, self::EXPIRATION_TIMESTAMP) < $now) {
+            $this->clearSession();
+            $_SESSION[self::EXPIRATION_TIMESTAMP] = $now + self::EXPIRATION_INTERVAL;
+        }
+    }
+
 
 
 }

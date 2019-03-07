@@ -96,32 +96,23 @@ class Repository
      */
     public function fetchMilestones(GithubClient $client, $pausingLabels = array())
     {
-        try {
-            $milestones = $client->milestones($this->name);
-            foreach ($milestones as $data) {
-                $closedIssues = $data['closed_issues'];
-                $openIssues = $data['open_issues'];
-                /* We skip milestones without issues (open or closed) */
-                if ($openIssues != 0 AND $closedIssues != 0) {
-                    $milestone = new Milestone(
-                        $this,
-                        $data['number'],
-                        $data['title'],
-                        $data['html_url']
-                    );
-                    $milestone->fetchIssues($client, $pausingLabels);
-                    $this->addMilestone($milestone);
-                }
+        $milestones = $client->milestones($this->name);
+        foreach ($milestones as $data) {
+            $closedIssues = $data['closed_issues'];
+            $openIssues = $data['open_issues'];
+            /* We skip milestones without issues (open or closed) */
+            if ($openIssues != 0 AND $closedIssues != 0) {
+                $milestone = new Milestone(
+                    $this,
+                    $data['number'],
+                    $data['title'],
+                    $data['html_url']
+                );
+                $milestone->fetchIssues($client, $pausingLabels);
+                $this->addMilestone($milestone);
             }
-            $this->sortMilestones();
-        } catch (RuntimeException $githubRuntimeException) { // Other kind of exception from the client may require different handling
-            error_log(sprintf(
-                "Could not retrieve milestones from repository %s because of %s with message: %s",
-                $this->name,
-                get_class($githubRuntimeException),
-                $githubRuntimeException->getMessage()
-            ));
         }
+        $this->sortMilestones();
     }
 
     /**
@@ -131,7 +122,7 @@ class Repository
     public function toArray()
     {
         $repository = array();
-        foreach($this->milestones as $milestone) {
+        foreach ($this->milestones as $milestone) {
             $repository[self::MILESTONES][] = $milestone->toArray();
         }
         $repository[self::NAME] = $this->name;
