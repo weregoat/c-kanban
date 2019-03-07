@@ -177,7 +177,7 @@ class Authentication
         $url = 'https://github.com/login/oauth/access_token';
         $data = array(
             'code' => $code,
-            'state' => $_SESSION['gh-state'],
+            'state' => $_SESSION[self::STATE],
             'client_id' => $this->clientID,
             'client_secret' => $this->clientSecret);
         $options = array(
