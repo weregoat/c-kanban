@@ -11,6 +11,7 @@ composer install --no-dev
 
 Other options are possible, YMMV.
 If all goes well it will create a `vendor` directory with the dependencies and the PSR-4 _autoload_ file.
+If it doesn't, you will need to check with the problems composer may had outlined (wrong PHP version or missing components...). They are mostly related to phpunit requirements (sadly the --no-dev option doesn't seem to stop Composer from checking them); removing the phpunit dependency from `composer.json` may help.
 
 The application **requires** the following environment variables:
 * `GH_CLIENT_ID`: the client ID of the OAuth Application for authorising GitHub API access.
