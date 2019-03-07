@@ -147,6 +147,25 @@ class Issue
         return $array;
     }
 
+    /**
+     * Sets the pause property for active issues only according to the presence or not of any label
+     * with a name matching (case insensitive) any from the given list.
+     * @param array $pausingLabels The array with the label names that will make an issue paused.
+     * @return bool The current paused state of the issue.
+     */
+    public function isPaused(array $pausingLabels) :bool {
+        if ($this->state == self::ACTIVE) {
+            if (!empty($this->labels) AND !empty($pausingLabels)) {
+                array_walk($pausingLabels, function($label) {return trim(strtolower($label));});
+                $intersection = array_intersect($pausingLabels, $this->labels);
+                if (!empty($intersection)) {
+                    $this->paused = TRUE;
+                }
+            }
+        }
+        return $this->paused;
+    }
+
 
     /**
      * Sets the state of the issue according to issue state and assignee.
@@ -195,24 +214,5 @@ class Issue
         foreach(Utilities::getArrayValue($data, 'labels') as $label) {
             $this->labels[] = strtolower(trim($label['name']));
         }
-    }
-
-    /**
-     * Sets the pause property for active issues only according to the presence or not of any label
-     * with a name matching (case insensitive) any from the given list.
-     * @param array $pausingLabels The array with the label names that will make an issue paused.
-     * @return bool The current paused state of the issue.
-     */
-    public function isPaused(array $pausingLabels) :bool {
-        if ($this->state == self::ACTIVE) {
-            if (!empty($this->labels) AND !empty($pausingLabels)) {
-                array_walk($pausingLabels, function($label) {return trim(strtolower($label));});
-                $intersection = array_intersect($pausingLabels, $this->labels);
-                if (!empty($intersection)) {
-                    $this->paused = TRUE;
-                }
-            }
-        }
-        return $this->paused;
     }
 }
