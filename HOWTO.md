@@ -10,7 +10,7 @@ composer install --no-dev
 ```
 
 Other options are possible, YMMV.
-If all goes well it will create a `vendor` directory with the dependencies and the _autoload_ file.
+If all goes well it will create a `vendor` directory with the dependencies and the PSR-4 _autoload_ file.
 
 The application **requires** the following environment variables:
 * `GH_CLIENT_ID`: the client ID of the OAuth Application for authorising GitHub API access.
@@ -48,7 +48,7 @@ Or an `.htaccess` file. YMMV
 
 # How to test the application
 
-There is a **very basic** PHPUnit suit to check some of the components; run composer **without** the `--no-dev` option and it will install also `phpunit` binaries and dependencies.
+There is a **very basic** PHPUnit suit to check some of the components (I don't follow TDD); run composer **without** the `--no-dev` option and it will install also `phpunit` binaries and dependencies.
 Then run the suite:
 ```
 ./vendor/bin/phpunit -c ./phpunit.xml
